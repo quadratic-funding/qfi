@@ -8,6 +8,8 @@ export type DappStateType = {
 export type DappContextType = {
   state: DappStateType;
   setState: SetValue<DappStateType>;
+  maciKey: string;
+  setMaciKey: SetValue<string>;
 };
 
 export type Props = PropsWithChildren<{}>;

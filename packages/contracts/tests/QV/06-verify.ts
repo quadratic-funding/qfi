@@ -532,7 +532,7 @@ describe("Process - Tally QV poll votes", function () {
       expect(await poll.verifySpentVoiceCredits(_totalSpent, _totalSpentSalt)).to.be.true;
     });
 
-    it.skip("TODO FIX - poll SHOULD verifyTallyResult", async () => {
+    it("TODO FIX - poll SHOULD verifyTallyResult", async () => {
       // Setup
       const recipientIndex = 1;
       const resultTree = new IncrementalQuinTree(treeDepths.voteOptionTreeDepth, BigInt(0), STATE_TREE_ARITY, hash5);
@@ -550,6 +550,7 @@ describe("Process - Tally QV poll votes", function () {
       // Calculate arguments
       const _voteOptionIndex = recipientIndex;
       const _tallyResult = tallyFileData.results.tally[recipientIndex]; // result of the recipient
+      const _tallyResultSalt = tallyFileData.results.salt;
       const _tallyResultProof = resultProof.pathElements.map((x: any) => x.map((y: any) => y.toString())); // result proof as astring
       const _spentVoiceCreditsHash = BigNumber.from(
         hashLeftRight(
@@ -583,6 +584,7 @@ describe("Process - Tally QV poll votes", function () {
           _voteOptionIndex,
           _tallyResult,
           _tallyResultProof,
+          _tallyResultSalt,
           _spentVoiceCreditsHash,
           _perVOSpentVoiceCreditsHash,
           _tallyCommitment

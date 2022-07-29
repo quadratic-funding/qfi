@@ -1,21 +1,17 @@
 import { useCallback, useMemo } from "react";
-import {
-  Text,
-  VStack, Button,
-  Show,
-  Image,
-  useColorModeValue
-} from "@chakra-ui/react";
+import { Text, VStack, Button, Show, Image, useColorModeValue } from "@chakra-ui/react";
 import BeatLoader from "react-spinners/BeatLoader";
 import CircleLoader from "react-spinners/CircleLoader";
 import { formatAddress, useWallet, useENS } from "@qfi/hooks";
+import { ButtonProps } from "@chakra-ui/react";
 
+type MagikButtonProps = ButtonProps & {};
 
-export function MagikButton() {
+export const MagikButton: React.FC<MagikButtonProps> = ({ children, ...props }) => {
   const { connectWallet, isConnecting, isConnected, disconnect, address } = useWallet();
   const { avatar, loading } = useENS({ address: address ?? undefined });
   // const { avatar, loading } = useENS({ ens: "alisha.eth" ?? "" });
-  
+
   const logoutBg = useColorModeValue(`red.400`, `red.400`);
   const loginBg = useColorModeValue(`#73FFBC`, `#37FFCF`);
   const switchBgHoverColor = isConnected ? logoutBg : loginBg;
@@ -36,8 +32,10 @@ export function MagikButton() {
   const switchAction = isConnected ? disconnect : connectWallet;
 
   return (
-    <Show above="sm">
       <Button
+        fontWeight="bold"
+        {...props}
+        w="full"
         onClick={() => !isConnecting && switchAction()}
         h={switchHeight}
         pl={2}
@@ -52,9 +50,8 @@ export function MagikButton() {
         }}>
         {isConnected ? <Web3State /> : <ConnectState />}
       </Button>
-    </Show>
   );
-}
+};
 function Web3State() {
   const switchColor = useColorModeValue("black", "white");
   const { address } = useWallet();
@@ -75,29 +72,24 @@ function Web3State() {
         return `(¬､¬)`;
     }
   }, []);
-  const BaseName = useMemo( ()=>{
+  const BaseName = useMemo(() => {
     return ens ? (
       <Text fontSize="sm" fontWeight="bold">
-      {ens}
-    </Text>
-    
-  ) : (
-    <Text fontSize="sm" fontWeight="bold">
-      {randomPlaceHolder()}
-    </Text>
-  );
+        {ens}
+      </Text>
+    ) : (
+      <Text fontSize="sm" fontWeight="bold">
+        {randomPlaceHolder()}
+      </Text>
+    );
   }, [ens, randomPlaceHolder]);
 
-  const SwitchName = loading ? (
-    <BeatLoader size={8} color={switchColor} />
-  ) : (
-    BaseName
-  );
+  const SwitchName = loading ? <BeatLoader size={8} color={switchColor} /> : BaseName;
 
   return (
     <VStack spacing={0.5} alignItems={"flex-start"}>
       {SwitchName}
-       {ens}
+      {ens}
       <Text fontSize="xs">{formatAddress(address)}</Text>
     </VStack>
   );
@@ -105,13 +97,12 @@ function Web3State() {
 function ConnectState() {
   return (
     <VStack spacing={0.5} alignItems={"flex-start"} pl={3}>
-      <Text fontSize="lg" fontWeight={"extrabold"} fontFamily={"Helvetica"}>
+      <Text fontSize="lg" fontWeight={"extrabold"} >
         CONNECT
       </Text>
     </VStack>
   );
 }
-
 
 // MIT License
 

@@ -29,13 +29,13 @@ jobs:
           
       - name: Lint
         run: |
-          yarn workspace @quadratic-funding/contracts run lint:solidity
-          yarn workspace @quadratic-funding/contracts run lint:js
+          yarn workspace @qfi/contracts run lint:solidity
+          yarn workspace @qfi/contracts run lint:js
 
       - name: Test Contract
         run: |
-          yarn workspace @quadratic-funding/contracts run generate:abi
-          yarn workspace @quadratic-funding/contracts run test:coverage
+          yarn workspace @qfi/contracts run generate:abi
+          yarn workspace @qfi/contracts run test:coverage
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v2

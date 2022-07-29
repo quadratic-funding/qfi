@@ -341,7 +341,7 @@ describe("Process - Tally QV poll votes", () => {
       const _newPubKey = maciKey.pubKey;
       const _voteOptionIndex = BigInt(index);
       const _newVoteWeight = BigInt(index);
-      const _nonce =  BigInt(2);
+      const _nonce = BigInt(2);
       const _pollId = BigInt(0);
       const _salt = BigInt(2);
       const command = new Command(_stateIndex, _newPubKey, _voteOptionIndex, _newVoteWeight, _nonce, _pollId, _salt);
@@ -354,17 +354,17 @@ describe("Process - Tally QV poll votes", () => {
       const _encPubKey = maciKey.pubKey.asContractParam();
       // NOTE: Publish the message on local maci data structure
       maciState.polls[0].publishMessage(message, maciKey.pubKey);
-      const { logs } = await poll
+      const { logs, blockHash } = await poll
         .connect(signer)
         .publishMessage(_message, _encPubKey)
         .then((tx) => tx.wait());
+      // const currentTime = (await provider.getBlock(blockHash)).timestamp;
     }
 
     const dd = await poll.getDeployTimeAndDuration();
     const hardHatProvider = ethers.provider;
-    await hardHatProvider.send("evm_increaseTime", [Number(dd[1]) + 1]);
+    await hardHatProvider.send("evm_increaseTime", [dd[1].toNumber() + 1]);
     await hardHatProvider.send("evm_mine", []);
-
     const extContracts = await poll.extContracts();
 
     const messageAqAddress = extContracts.messageAq;
@@ -574,7 +574,7 @@ describe("Process - Tally QV poll votes", () => {
       });
       expect(maciPoll.hasUntalliedBallots()).to.equal(false);
       expect(maciPoll.hasUnprocessedMessages()).to.equal(false);
-      expect(maciPoll.messages.length).to.be.equal(users.length*2); //every user sends an overide message
+      expect(maciPoll.messages.length).to.be.equal(users.length * 2); //every user sends an overide message
     });
   });
 });

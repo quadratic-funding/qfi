@@ -1,6 +1,6 @@
 {
   "name": "@qfi/hooks",
-  "version": "0.1.0",
+  "version": "2.3.0",
   "private": true,
   "main": "./src/index.tsx",
   "dependencies": {

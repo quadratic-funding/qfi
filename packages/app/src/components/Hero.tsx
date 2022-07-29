@@ -7,26 +7,22 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 
-import logo2 from "./assets/logo2.svg";
-import logo3 from "./assets/logo3.svg";
-import logo5 from "./assets/logo5.svg";
-import logo6 from "./assets/logo6.svg";
-import logo7 from "./assets/logo7.svg";
-import logo8 from "./assets/logo8.svg";
-import logo9 from "./assets/logo9.svg";
+import logo from "./assets/logo.png";
+import hero from "./assets/hero.png";
+import hero4 from "./assets/hero4.png";
 
 const spin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
 `;
 
 export const Logo = forwardRef<ImageProps, "img">((props, ref) => {
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const SwitchIcon = useColorModeValue(logo2, logo9);
-  const animation = prefersReducedMotion ? undefined : `${spin} infinite 20s linear`;
+  const SwitchIcon = useColorModeValue(logo, logo);
+  // const animation = prefersReducedMotion ? undefined : `${spin} infinite 60s linear`;
 
-  return <chakra.img animation={animation} src={SwitchIcon} ref={ref} {...props} />;
+  return <chakra.img  src={SwitchIcon} ref={ref} {...props} rounded="full" />;
 });
 
 export const Hero = forwardRef<ImageProps, "img">((props, ref) => {
@@ -36,36 +32,36 @@ export const Hero = forwardRef<ImageProps, "img">((props, ref) => {
     const rand = Math.floor(Math.random() * 6) + 2;
     switch (rand) {
       case 2:
-        return logo2;
+        return hero4;
       case 3:
-        return logo3;
+        return hero4;
       case 6:
-        return logo6;
+        return hero4;
       case 7:
-        return logo7;
+        return hero4;
       default:
-        return logo2;
+        return hero4;
     }
   };
   const RandomHeroDark = () => {
     const rand = Math.floor(Math.random() * 6) + 2;
     switch (rand) {
       case 2:
-        return logo7;
+        return hero4;
       case 3:
-        return logo8;
+        return hero4;
       case 6:
-        return logo9;
+        return hero4;
       case 7:
-        return logo5;
+        return hero4;
       default:
-        return logo8;
+        return hero4;
     }
   };
   const SwitchIcon = useColorModeValue(RandomHeroLight(), RandomHeroDark());
 
-  const animation = prefersReducedMotion ? undefined : `${spin} infinite 200000000s linear`;
+  // const animation = prefersReducedMotion ? undefined : `${spin} infinite 200000000s linear`;
 
-  const light = <chakra.img animation={animation} src={SwitchIcon} ref={ref} {...props} />;
+  const light = <chakra.img  src={SwitchIcon} ref={ref} {...props} />;
   return light;
 });

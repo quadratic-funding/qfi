@@ -45,7 +45,10 @@ contract QFI is MACI, FundsManager {
      * @param _messageAqFactoryGrantRounds The Ethereum smart contract address of the Message AQ Factory for the current Grant Round.
      * @param _currentStage The updated value for the current QFI stage.
      */
-    event QfiInitialized(address _messageAqFactoryGrantRounds, Stage _currentStage);
+    event QfiInitialized(
+        address _messageAqFactoryGrantRounds,
+        Stage _currentStage
+    );
 
     /**
      * Event issued when the owner (deployer) set the PollProcessorAndTallyer contract.
@@ -58,10 +61,7 @@ contract QFI is MACI, FundsManager {
      * @param _contributor The Ethereum address of who sends the contribution.
      * @param _amount The amount in native ERC20 tokens submitted as contribution.
      */
-    event ContributionSent(
-        address _contributor,
-        uint256 _amount
-    );
+    event ContributionSent(address _contributor, uint256 _amount);
 
     /**
      * Event issued when a contributor decides to withdraw his/her contribution for the current Grant Round.
@@ -210,7 +210,10 @@ contract QFI is MACI, FundsManager {
         );
         currentStage = Stage.WAITING_FOR_SIGNUPS_AND_TOPUPS;
 
-        emit QfiInitialized(address(_messageAqFactoryGrantRounds), currentStage);
+        emit QfiInitialized(
+            address(_messageAqFactoryGrantRounds),
+            currentStage
+        );
     }
 
     /**
@@ -294,7 +297,10 @@ contract QFI is MACI, FundsManager {
      * @dev Withdraw contributed funds from the pool if the round has been cancelled.
      */
     function withdrawContribution() external {
-        // require(isCancelled, 'FundingRound: Round not cancelled');
+        require(
+            currentStage == Stage.WAITING_FOR_SIGNUPS_AND_TOPUPS,
+            "QFI: Not accepting signups or top ups"
+        );
         // Reconstruction of exact contribution amount from VCs may not be possible due to a loss of precision
         uint256 amount = contributors[msg.sender].voiceCredits *
             voiceCreditFactor;
@@ -407,7 +413,7 @@ contract QFI is MACI, FundsManager {
     function closeVotingAndWaitForDeadline() public onlyOwner {
         require(
             currentStage == Stage.VOTING_PERIOD_OPEN,
-            "MACI: Cannot deploy a new grant round while not in the WAITING_FOR_SIGNUPS_AND_TOPUPS stage"
+            "MACI: WAITING_FOR_SIGNUPS_AND_TOPUPS Cannot deploy a new grant round"
         );
         //TODO: ACTUALLY CLOSE THE VOTING PERIOD on the grant round contract
         currentStage = Stage.WAITING_FOR_FINALIZATION;
@@ -415,21 +421,34 @@ contract QFI is MACI, FundsManager {
         emit VotingPeriodClosed(currentStage);
     }
 
-    function finalizeCurrentRound(uint256 _totalSpent, uint256 _totalSpentSalt)
-        external
-        onlyOwner
-    {
+    function finalizeCurrentRound(
+        uint256 _finalTallyCommitment,
+        uint256 _finalSbCommitment,
+        uint256 _alphaDenominator
+    ) external onlyOwner {
         require(
             currentStage == Stage.WAITING_FOR_FINALIZATION,
             "QFI: Cannot finalize a grant round while not in the WAITING_FOR_FINALIZATION stage"
         );
-        bool proccesingComplete = pollProcessorAndTallyer.processingComplete();
-        require(proccesingComplete, "QFI: messages have not been proccessed");
+        require(
+            pollProcessorAndTallyer.processingComplete(),
+            "QFI: messages have not been proccessed"
+        );
+        require(
+            _finalSbCommitment == pollProcessorAndTallyer.sbCommitment(),
+            "QFI: finalTallyCommitment does not match the current grant round's tally commitment"
+        );
+        require(
+            _finalTallyCommitment == pollProcessorAndTallyer.tallyCommitment(),
+            "QFI: finalTallyCommitment does not match the current grant round's tally commitment"
+        );
+
         GrantRound g = currentGrantRound;
-        //NOTE: tansfer the funds to the grant round contract first before finalizing, so that the matching pool is calculated correctly
+
         //NOTE: matching pool will be balance of the grant contract less the totalSpent * voiceCreditFactor
         transferMatchingFunds(g);
-        g.finalize(_totalSpent, _totalSpentSalt);
+        //NOTE: tansfer the funds to the grant round contract first before finalizing, so that the matching pool is calculated correctly
+        g.finalize(_alphaDenominator);
 
         currentStage = Stage.FINALIZED;
 

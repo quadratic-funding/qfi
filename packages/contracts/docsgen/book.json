@@ -1,0 +1,18 @@
+{
+  "plugins": [
+    "github",
+    "insert-logo",
+    "back-to-top-button"
+
+  ],
+  "pluginsConfig": {
+    "github": {
+      "url": "https://github.com/quadratic-funding/QFI.git"
+    }, 
+    
+    "insert-logo": {
+      "url": "https://www.notion.so/image/https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fsecure.notion-static.com%2F54fc71b3-1ec7-47b6-b6a5-2482b98d6902%2F02.png?table=block&id=98351d10-d849-4b17-8897-a8be6a399d32&spaceId=b6f02e04-07e9-46dc-b1e0-099d23103588&width=250&userId=7266b8c0-c7eb-4172-8779-7587af4dcbb5&cache=v2",
+      "style": "background: none;"
+    }
+  }
+}

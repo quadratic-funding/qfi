@@ -108,7 +108,5 @@ contract FundsManager is Ownable {
                 );
             }
         }
-        // currentRound.finalize(_totalSpent, _totalSpentSalt);
-        // emit RoundFinalized(address(currentRound));
     }
 }

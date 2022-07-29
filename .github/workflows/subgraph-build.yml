@@ -29,5 +29,5 @@ jobs:
           
       - name: Build
         run: |
-          CI=false yarn workspace @quadratic-funding/subgraph codegen
-          CI=false yarn workspace @quadratic-funding/subgraph build
+          CI=false yarn workspace @qfi/subgraph codegen
+          CI=false yarn workspace @qfi/subgraph build

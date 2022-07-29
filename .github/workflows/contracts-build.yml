@@ -31,13 +31,13 @@ jobs:
           
       - name: Run Unit Test
         run: |
-          yarn workspace @quadratic-funding/contracts run typechain
-          yarn workspace @quadratic-funding/contracts run test:unit
+          yarn workspace @qfi/contracts run typechain
+          yarn workspace @qfi/contracts run test:unit
 
       - name: Lint
         run: |
-          yarn workspace @quadratic-funding/contracts run lint:solidity
-          yarn workspace @quadratic-funding/contracts run lint:js
+          yarn workspace @qfi/contracts run lint:solidity
+          yarn workspace @qfi/contracts run lint:js
 
   qv-test:
     runs-on: ubuntu-20.04
@@ -55,8 +55,8 @@ jobs:
           
       - name: Run QV Test
         run: |
-          yarn workspace @quadratic-funding/contracts run typechain
-          yarn workspace @quadratic-funding/contracts test:qv
+          yarn workspace @qfi/contracts run typechain
+          yarn workspace @qfi/contracts test:qv
 
   qf-test:
     runs-on: ubuntu-20.04
@@ -74,5 +74,5 @@ jobs:
 
       - name: Run QF Test
         run: |
-          yarn workspace @quadratic-funding/contracts run typechain
-          yarn workspace @quadratic-funding/contracts run test:qf
+          yarn workspace @qfi/contracts run typechain
+          yarn workspace @qfi/contracts run test:qf

@@ -20,21 +20,26 @@ const initialDappState: DappStateType = {
 const DappContext = createContext<DappContextType>({
   state: {} as DappStateType,
   setState: () => {},
+  maciKey: "",
+  setMaciKey: () => {},
 });
 
 export const DappProvider: React.FC<Props> = ({ children }) => {
   const [state, setState] = useLocalStorage<DappStateType>("data", initialDappState);
+  const [maciKey, setMaciKey] = useLocalStorage<string>("maciKey", "");
 
   const contextValue = useMemo(
     () => ({
       state,
       setState,
+      maciKey,
+      setMaciKey,
     }),
-    [state, setState]
+    [state, setState, maciKey, setMaciKey]
   );
 
   useEffect(() => {
-    // set initial state if need asynch calls
+    // set initial state if need async calls
     // setState({});
   }, []);
 
@@ -43,7 +48,7 @@ export const DappProvider: React.FC<Props> = ({ children }) => {
       <WalletProvider
         web3modalOptions={web3modalOptions}
         networks={SUPPORTED_NETWORKS}
-        defaultChainId={nameToChainId("Mainnet")}
+        defaultChainId={nameToChainId("Gnosis Chain")}
         handleAccountsChangedEvent={(accounts: string[]) => {
           console.log("Accounts changed");
         }}

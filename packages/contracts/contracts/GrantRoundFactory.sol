@@ -2,19 +2,19 @@
 pragma experimental ABIEncoderV2;
 pragma solidity ^0.8.1;
 
-import {PollFactory, Poll, MessageAqFactory, PollDeploymentParams} from 'qaci-contracts/contracts/Poll.sol';
-import {VkRegistry} from 'qaci-contracts/contracts/VkRegistry.sol';
-import {Params} from 'qaci-contracts/contracts/Params.sol';
-import {Hasher, PoseidonT3, PoseidonT4, PoseidonT5, PoseidonT6} from 'qaci-contracts/contracts/crypto/Hasher.sol';
-import {IMACI} from 'qaci-contracts/contracts/IMACI.sol';
-import {AccQueue} from 'qaci-contracts/contracts/trees/AccQueue.sol';
-import {DomainObjs, IPubKey, IMessage} from 'qaci-contracts/contracts/DomainObjs.sol';
-import {Ownable} from '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {PollFactory, Poll, MessageAqFactory, PollDeploymentParams} from "qaci-contracts/contracts/Poll.sol";
+import {VkRegistry} from "qaci-contracts/contracts/VkRegistry.sol";
+import {Params} from "qaci-contracts/contracts/Params.sol";
+import {Hasher, PoseidonT3, PoseidonT4, PoseidonT5, PoseidonT6} from "qaci-contracts/contracts/crypto/Hasher.sol";
+import {IMACI} from "qaci-contracts/contracts/IMACI.sol";
+import {AccQueue} from "qaci-contracts/contracts/trees/AccQueue.sol";
+import {DomainObjs, IPubKey, IMessage} from "qaci-contracts/contracts/DomainObjs.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {GrantRound} from './GrantRound.sol';
-import {IRecipientRegistry} from './recipientRegistry/IRecipientRegistry.sol';
+import {GrantRound} from "./GrantRound.sol";
+import {IRecipientRegistry} from "./recipientRegistry/IRecipientRegistry.sol";
 
 /**
  * @title Quadratic Funding Round Factory Contracts
@@ -107,7 +107,7 @@ contract GrantRoundFactory is
         IMACI _maci,
         address _grantRoundOwner
     ) public onlyOwner returns (GrantRound) {
-        uint8 treeArity = 5;
+        uint256 treeArity = 5;
 
         // Validate _maxValues
         // NOTE: these checks may not be necessary. Removing them will save
@@ -118,13 +118,14 @@ contract GrantRoundFactory is
         // of the inputs (aka packedVal)
 
         require(
-            _maxValues.maxMessages <= treeArity**_treeDepths.messageTreeDepth &&
+            _maxValues.maxMessages <=
+                treeArity**uint256(_treeDepths.messageTreeDepth) &&
                 _maxValues.maxMessages >= _batchSizes.messageBatchSize &&
                 _maxValues.maxMessages % _batchSizes.messageBatchSize == 0 &&
                 _maxValues.maxVoteOptions <=
-                treeArity**_treeDepths.voteOptionTreeDepth &&
+                treeArity**uint256(_treeDepths.voteOptionTreeDepth) &&
                 _maxValues.maxVoteOptions < (2**50),
-            'PollFactory: invalid _maxValues'
+            "PollFactory: invalid _maxValues"
         );
 
         AccQueue messageAq = messageAqFactory.deploy(

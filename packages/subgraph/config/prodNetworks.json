@@ -1,0 +1,26 @@
+{
+    "xdai": {
+        "QFI": {
+            "address": "0xabc...",
+            "startBlock": 123456
+        },
+        "OptimisticRecipientRegistry": {
+            "address": "0x123...",
+            "startBlock": 123444
+        },
+        "GrantRoundFactory": {
+            "address": "0x123...",
+            "startBlock": 123444
+        }
+    },
+    "prod-network2": {
+        "dataSource1": {
+            "address": "0x987...",
+            "startBlock": 123
+        },
+        "dataSource2": {
+            "address": "0xxyz..",
+            "startBlock": 456
+        }
+    }
+}

@@ -743,12 +743,17 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_totalSpent",
+        "name": "_finalTallyCommitment",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_totalSpentSalt",
+        "name": "_finalSbCommitment",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_alphaDenominator",
         "type": "uint256"
       }
     ],

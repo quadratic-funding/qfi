@@ -27,10 +27,12 @@ import {
     Contribution,
     Contributor,
     FundingSource,
-    GrantRoundContributor
+    GrantRoundContributor,
+    GrantRoundFactory
 } from "../../generated/schema"
 import { GrantRound as GrantRoundTemplate } from "../../generated/templates"
-import { currentStageConverter } from "../utils/converter"
+import { currentStageConverterFromEnumIndexToString } from "../utils/converter"
+import { ONE } from "../utils/constants"
 
 /**
  * Handle a smart contract based on MACI (constructor event).
@@ -39,7 +41,11 @@ import { currentStageConverter } from "../utils/converter"
 export function handleMaciDeployed(event: MaciDeployed): void {
     log.debug(`MACI Deployed event block: {}`, [event.block.number.toString()])
 
+    // TODO: need to add MaciDeployed event to MACI smart contract to trigger this. For now,
+    // we are just not using it (therefore, the QFI creation is on the QfiDeployed handler).
+
     const timestamp = event.block.timestamp.toString()
+
     // Get the QFI/MACI instance.
     const qfiAddress = event.address
     const qfiContract = QFIContract.bind(qfiAddress)
@@ -51,16 +57,23 @@ export function handleMaciDeployed(event: MaciDeployed): void {
     qfi.initialVoiceCreditProxyAddress = event.params._initialVoiceCreditProxy
     qfi.signUpGatekeeperAddress = event.params._signUpGatekeeper
     qfi.signUpTimestamp = event.params._timestamp
-    qfi.numSignUps = new BigInt(0)
-    qfi.nextGrantRoundId = new BigInt(0)
     qfi.createdAt = timestamp
     qfi.lastUpdatedAt = timestamp
 
     // External call to contract instance (one time event - good trade-off for sync time).
-    qfi.stateTreeDepth = qfiContract.stateTreeDepth().toI32()
+    qfi.stateTreeDepth = qfiContract.stateTreeDepth()
     qfi.numSignUps = qfiContract.numSignUps()
+    qfi.nextGrantRoundId = qfiContract.nextGrantRoundId()
+    qfi.contributorCount = qfiContract.contributorCount()
+    qfi.voiceCreditFactor = qfiContract.voiceCreditFactor()
+    qfi.isInitialized = qfiContract.isInitialised()
+    qfi.stateTreeDepth = qfiContract.stateTreeDepth()
+    qfi.isStateAqMerged = false
+    qfi.currentStage = currentStageConverterFromEnumIndexToString(qfiContract.currentStage().toString())
 
     qfi.save()
+
+    log.debug(`handleMaciDeployed executed correctly`, [])
 }
 
 /**
@@ -70,23 +83,61 @@ export function handleMaciDeployed(event: MaciDeployed): void {
 export function handleQfiDeployed(event: QfiDeployed): void {
     log.debug(`QFI Deployed event block: {}`, [event.block.number.toString()])
 
-    // Get the QFI/MACI instance.
+    const timestamp = event.block.timestamp.toString()
+
+    // Create the QFI/MACI instance.
     const qfiAddress = event.address
+    const qfiContract = QFIContract.bind(qfiAddress)
     const qfiId = qfiAddress.toHexString()
     const qfi = new QFISchema(qfiId)
 
-    if (qfi !== null) {
-        qfi.grantRoundFactoryAddress = event.params._grantRoundFactory
-        qfi.nativeERC20TokenAddress = event.params._nativeToken
-        qfi.voiceCreditFactor = event.params._voiceCreditFactor
-        qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+    qfi.grantRoundFactoryAddress = event.params._grantRoundFactory
+    qfi.nativeERC20TokenAddress = event.params._nativeToken
+    qfi.voiceCreditFactor = event.params._voiceCreditFactor
+    qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
 
-        qfi.save()
+    // From contract.
+    qfi.stateAqAddress = qfiContract.stateAq()
+    qfi.pollFactoryAddress = qfiContract.pollFactory()
+    qfi.initialVoiceCreditProxyAddress = qfiContract.initialVoiceCreditProxy()
+    qfi.signUpGatekeeperAddress = qfiContract.signUpGatekeeper()
+    qfi.signUpTimestamp = qfiContract.signUpTimestamp()
+    qfi.isInitialized = qfiContract.isInitialised()
+    qfi.stateTreeDepth = qfiContract.stateTreeDepth()
+    qfi.numSignUps = qfiContract.numSignUps()
+    qfi.nextGrantRoundId = qfiContract.nextGrantRoundId()
+    qfi.contributorCount = qfiContract.contributorCount()
+    qfi.voiceCreditFactor = qfiContract.voiceCreditFactor()
+    qfi.isInitialized = qfiContract.isInitialised()
+    qfi.stateTreeDepth = qfiContract.stateTreeDepth()
+    qfi.isStateAqMerged = false
+    qfi.currentStage = currentStageConverterFromEnumIndexToString(qfiContract.currentStage().toString())
 
-        log.info("QFI has been correctly deployed!", [])
+    qfi.createdAt = timestamp
+    qfi.lastUpdatedAt = timestamp
+
+    const grantRoundFactoryAddress = event.params._grantRoundFactory
+    const grantRoundFactoryId = grantRoundFactoryAddress.toHexString()
+    let grantRoundFactory = GrantRoundFactory.load(grantRoundFactoryId)
+
+    // Check if the Grant Round Factory entity has been already created; otherwise create a new one.
+    if (grantRoundFactory !== null) {
+        const recipientRegistryAddress = grantRoundFactory.recipientRegistryAddress
+
+        qfi.recipientRegistry = recipientRegistryAddress ? recipientRegistryAddress.toHexString() : null
     } else {
-        log.error(`QFI entity not found!`, [])
+        // Create a new Grant Round Factory entity.
+        grantRoundFactory = new GrantRoundFactory(grantRoundFactoryId)
+        grantRoundFactory.createdAt = timestamp
+        grantRoundFactory.lastUpdatedAt = timestamp
+
+        grantRoundFactory.save()
     }
+
+    qfi.lastUpdatedAt = timestamp
+    qfi.save()
+
+    log.debug(`handleQfiDeployed executed correctly`, [])
 }
 
 /**
@@ -96,18 +147,26 @@ export function handleQfiDeployed(event: QfiDeployed): void {
 export function handleInitMaci(event: Init): void {
     log.debug(`Init MACI event block: {}`, [event.block.number.toString()])
 
+    const timestamp = event.block.timestamp.toString()
+
     // Get the QFI/MACI instance.
     const qfiAddress = event.address
+    const qfiContract = QFIContract.bind(qfiAddress)
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         qfi.vkRegistryAddress = event.params._vkRegistry
         qfi.messageAqFactoryPollAddress = event.params._messageAqFactory
-        qfi.isInitialized = true
+        qfi.isInitialized = qfiContract.isInitialised()
+        qfi.lastUpdatedAt = timestamp
 
         qfi.save()
+    } else {
+        log.error(`QFI entity not found!`, [])
     }
+
+    log.debug(`handleInitMaci executed correctly`, [])
 }
 
 /**
@@ -117,19 +176,24 @@ export function handleInitMaci(event: Init): void {
 export function handleQfiInitialized(event: QfiInitialized): void {
     log.debug(`QfiInitialized event block: {}`, [event.block.number.toString()])
 
+    const timestamp = event.block.timestamp.toString()
+
     // Get the QFI/MACI instance.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         qfi.messageAqFactoryGrantRoundAddress = event.params._messageAqFactoryGrantRounds
-        qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+        qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
+        qfi.lastUpdatedAt = timestamp
 
         qfi.save()
-
-        log.info("QFI has been correctly initialized", [])
+    } else {
+        log.error(`QFI entity not found!`, [])
     }
+
+    log.debug(`handleQfiInitialized executed correctly`, [])
 }
 
 /**
@@ -139,37 +203,41 @@ export function handleQfiInitialized(event: QfiInitialized): void {
 export function handleSignUp(event: SignUp): void {
     log.debug(`SignUp event block: {}`, [event.block.number.toString()])
 
+    const timestamp = event.block.timestamp.toString()
+
+    // User public key.
     const publicKeyId = event.transaction.from.toHexString()
     const publicKey = PublicKey.load(publicKeyId)
+
+    if (publicKey === null) {
+        // Create a new PublicKey instance.
+        const publicKey = new PublicKey(publicKeyId)
+
+        publicKey.x = event.params._userPubKey.x
+        publicKey.y = event.params._userPubKey.y
+        publicKey.stateIndex = event.params._stateIndex
+        publicKey.voiceCreditBalance = event.params._voiceCreditBalance
+        publicKey.timestamp = timestamp
+        publicKey.lifetimeAmountContributed = new BigInt(0)
+        publicKey.lastUpdatedAt = timestamp
+
+        publicKey.save()
+    } else {
+        log.error(`Public key already in use!`, [])
+    }
+
+    // QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
-        if (publicKey === null) {
-            // Create a new PublicKey instance.
-            const publicKey = new PublicKey(publicKeyId)
-
-            publicKey.x = event.params._userPubKey.x
-            publicKey.y = event.params._userPubKey.y
-            publicKey.stateIndex = event.params._stateIndex
-            publicKey.voiceCreditBalance = event.params._voiceCreditBalance
-            publicKey.timestamp = event.params._timestamp.toString()
-
-            publicKey.save()
-
-            log.info("A new PublicKey with ID '{}' has been created!", [publicKeyId])
-        }
-
-        // Update QFI.
-        qfi.numSignUps = qfi.numSignUps.plus(BigInt.fromI32(1))
-        qfi.lastUpdatedAt = event.block.timestamp.toString()
+        qfi.numSignUps = qfi.numSignUps.plus(ONE)
+        qfi.lastUpdatedAt = timestamp
 
         qfi.save()
-
-        log.info("QFI signups updated to '{}'!", [qfi.numSignUps.toString()])
     } else {
-        log.error("QFI is not initialized!", [])
+        log.error(`QFI entity not found!`, [])
     }
 }
 
@@ -183,7 +251,7 @@ export function handleMergeStateAq(event: MergeStateAq): void {
     const timestamp = event.block.timestamp.toString()
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         qfi.isStateAqMerged = true
@@ -222,89 +290,86 @@ export function handleContributionSent(event: ContributionSent): void {
     // Get QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
-    // Get Contributor.
-    const contributorAddress = event.params._contributor
-    const contributorId = contributorAddress.toHexString()
-    let contributor = Contributor.load(contributorId)
-    const grantRoundId = qfi.currentGrantRound
-    const timestamp = event.block.timestamp.toString()
+    if (qfi !== null) {
+        // Get Contributor.
+        const contributorAddress = event.params._contributor
+        const contributorId = contributorAddress.toHexString()
+        let contributor = Contributor.load(contributorId)
+        const grantRoundId = qfi.currentGrantRound
+        const timestamp = event.block.timestamp.toString()
 
-    if (grantRoundId) {
-        // Create a new mapping table for GrantRound-Contribution relationship.
-        const mappingTableGRCId = grantRoundId.concat("-").concat(contributorId)
-        let mappingTableGRC = GrantRoundContributor.load(mappingTableGRCId)
+        if (grantRoundId) {
+            // Create a new mapping table for GrantRound-Contribution relationship.
+            const mappingTableGRCId = grantRoundId.concat("-").concat(contributorId)
+            let mappingTableGRC = GrantRoundContributor.load(mappingTableGRCId)
 
-        // Associate a new PublicKey to the Contributor.
-        const publicKeyId = contributorId
-        const publicKey = PublicKey.load(publicKeyId)
+            // Associate a new PublicKey to the Contributor.
+            const publicKeyId = contributorId
+            const publicKey = PublicKey.load(publicKeyId)
 
-        if (publicKey !== null) {
-            if (contributor === null) {
-                contributor = new Contributor(contributorId)
-            }
+            if (publicKey !== null) {
+                if (contributor === null) {
+                    contributor = new Contributor(contributorId)
+                }
 
-            if (mappingTableGRC === null) {
-                mappingTableGRC = new GrantRoundContributor(mappingTableGRCId)
-            }
+                if (mappingTableGRC === null) {
+                    mappingTableGRC = new GrantRoundContributor(mappingTableGRCId)
+                }
 
-            contributor.address = event.params._contributor
-            contributor.voiceCredits = publicKey.voiceCreditBalance
-            contributor.isRegistered = false // TODO: To be checked.
-            contributor.publicKey = publicKeyId
-            contributor.txHash = event.transaction.hash
-            contributor.createdAt = timestamp
-            contributor.lastUpdatedAt = timestamp
+                contributor.address = event.params._contributor
+                contributor.voiceCredits = publicKey.voiceCreditBalance
+                contributor.isRegistered = false // TODO: To be checked.
+                contributor.publicKey = publicKeyId
+                contributor.txHash = event.transaction.hash
+                contributor.createdAt = timestamp
+                contributor.lastUpdatedAt = timestamp
 
-            mappingTableGRC.grantRound = grantRoundId
-            mappingTableGRC.contributor = contributorId
+                mappingTableGRC.grantRound = grantRoundId
+                mappingTableGRC.contributor = contributorId
 
-            contributor.save()
-            mappingTableGRC.save()
+                contributor.save()
+                mappingTableGRC.save()
 
-            // Get the VoiceCreditFactor from QFI contract (for each contribution - trade off to be considered).
-            const qfiContract = QFIContract.bind(qfiAddress)
-            const voiceCreditFactor = qfiContract.voiceCreditFactor()
+                // Get the VoiceCreditFactor from QFI contract (for each contribution - trade off to be considered).
+                const qfiContract = QFIContract.bind(qfiAddress)
+                const voiceCreditFactor = qfiContract.voiceCreditFactor()
 
-            // Create a new Contribution.
-            const contributionId = grantRoundId.concat("-").concat(contributorId)
-            const contribution = new Contribution(contributionId)
+                // Create a new Contribution.
+                const contributionId = grantRoundId.concat("-").concat(contributorId)
+                const contribution = new Contribution(contributionId)
 
-            contribution.contributor = contributorId
-            contribution.grantRound = grantRoundId
-            contribution.publicKey = publicKeyId
-            contribution.amount = event.params._amount
-            contribution.voiceCredits = event.params._amount.div(voiceCreditFactor)
-            contribution.createdAt = timestamp
-            contribution.lastUpdatedAt = timestamp
+                contribution.contributor = contributorId
+                contribution.grantRound = grantRoundId
+                contribution.publicKey = publicKeyId
+                contribution.amount = event.params._amount
+                contribution.voiceCredits = event.params._amount.div(voiceCreditFactor)
+                contribution.createdAt = timestamp
+                contribution.lastUpdatedAt = timestamp
 
-            contribution.save()
+                contribution.save()
 
-            // Update PublicKey.
-            publicKey.voiceCreditBalance = publicKey.voiceCreditBalance.plus(
-                event.params._amount.div(voiceCreditFactor)
-            )
-            publicKey.lifetimeAmountContributed = publicKey.lifetimeAmountContributed.plus(
-                event.params._amount
-            )
+                // Update PublicKey.
+                publicKey.voiceCreditBalance = publicKey.voiceCreditBalance.plus(
+                    event.params._amount.div(voiceCreditFactor)
+                )
+                publicKey.lifetimeAmountContributed = publicKey.lifetimeAmountContributed.plus(event.params._amount)
 
-            publicKey.save()
+                publicKey.save()
 
-            // Update QFI.
-            if (qfi !== null) {
                 qfi.contributorCount = qfi.contributorCount.plus(BigInt.fromI32(1))
                 qfi.lastUpdatedAt = event.block.timestamp.toString()
 
                 qfi.save()
             } else {
-                log.error(`QFI entity not found!`, [])
+                log.error(`Contributor PublicKey not found!`, [])
             }
         } else {
-            log.error(`Contributor PublicKey not found!`, [])
+            log.error(`GrantRound is not initialized!`, [])
         }
     } else {
-        log.error(`GrantRound is not initialized!`, [])
+        log.error(`QFI entity not found!`, [])
     }
 }
 
@@ -318,22 +383,23 @@ export function handleContributionWithdrew(event: ContributionWithdrew): void {
     // Get QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
-    // Get Contributor.
-    const contributorId = event.params._contributor.toHexString()
-    const grantRoundId = qfi.currentGrantRound
+    const qfi = QFISchema.load(qfiId)
 
-    if (grantRoundId !== null) {
-        const contributionId = grantRoundId.concat(contributorId)
-
-        // Remove the Contribution from the store.
-        store.remove("Contribution", contributionId)
-    } else {
-        log.error(`QFI current GrantRound is not initialized!`, [])
-    }
-
-    // Update QFI.
     if (qfi !== null) {
+        // Get Contributor.
+        const contributorId = event.params._contributor.toHexString()
+        const grantRoundId = qfi.currentGrantRound
+
+        if (grantRoundId !== null) {
+            const contributionId = grantRoundId.concat(contributorId)
+
+            // Remove the Contribution from the store.
+            store.remove("Contribution", contributionId)
+        } else {
+            log.error(`QFI current GrantRound is not initialized!`, [])
+        }
+
+        // Update QFI.
         qfi.contributorCount = qfi.contributorCount.minus(BigInt.fromI32(1))
         qfi.lastUpdatedAt = event.block.timestamp.toString()
 
@@ -401,19 +467,21 @@ export function handleGrantRoundDeployed(event: GrantRoundDeployed): void {
 
         // Update QFI.
         const qfiId = qfiAddress.toHexString()
-        const qfi = new QFISchema(qfiId)
+        const qfi = QFISchema.load(qfiId)
 
         if (qfi !== null) {
             qfi.coordinator = coordinatorId
             qfi.currentGrantRound = grantRoundId.toString()
             qfi.nextGrantRoundId = qfi.nextGrantRoundId.plus(BigInt.fromI32(1))
-            qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+            qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
             qfi.lastUpdatedAt = event.block.timestamp.toString()
 
             qfi.save()
         } else {
             log.error(`QFI entity not found!`, [])
         }
+
+        // Update Recipient Registry
     } else {
         log.error(`Grant Round already exists!`, [])
     }
@@ -455,10 +523,10 @@ export function handleGrantRoundFinalized(event: GrantRoundFinalized): void {
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
-        qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+        qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
 
         qfi.save()
     } else {
@@ -484,10 +552,10 @@ export function handleVotingPeriodClosed(event: VotingPeriodClosed): void {
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
-        qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+        qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
 
         qfi.save()
     } else {
@@ -505,10 +573,10 @@ export function handlePreRoundContributionPeriodStarted(event: PreRoundContribut
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
-        qfi.currentStage = currentStageConverter(new BigInt(event.params._currentStage))
+        qfi.currentStage = currentStageConverterFromEnumIndexToString(event.params._currentStage.toString())
 
         qfi.save()
     } else {
@@ -526,7 +594,7 @@ export function handlePollProcessorAndTallyerChanged(event: PollProcessorAndTall
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         qfi.pollProcessorAndTallyerAddress = event.params._pollProcessorAndTallyer
@@ -548,7 +616,7 @@ export function handleFundingSourceAdded(event: FundingSourceAdded): void {
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         // Create a new Funding Source.
@@ -578,7 +646,7 @@ export function handleFundingSourceRemoved(event: FundingSourceRemoved): void {
     // Update QFI.
     const qfiAddress = event.address
     const qfiId = qfiAddress.toHexString()
-    const qfi = new QFISchema(qfiId)
+    const qfi = QFISchema.load(qfiId)
 
     if (qfi !== null) {
         const fundingSourceId = event.params._source.toHexString()

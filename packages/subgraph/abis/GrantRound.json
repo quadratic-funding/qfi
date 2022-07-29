@@ -310,6 +310,19 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "alpha",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -378,16 +391,11 @@
         "internalType": "uint256",
         "name": "_spent",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_spentSalt",
-        "type": "uint256"
       }
     ],
     "name": "claimFunds",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -474,12 +482,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_totalSpent",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_totalSpentSalt",
+        "name": "_alphaDenominator",
         "type": "uint256"
       }
     ],
@@ -1027,6 +1030,29 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_voteOptionIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_payoutAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_erc20Address",
+        "type": "address"
+      }
+    ],
+    "name": "transferMatchingFunds",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {

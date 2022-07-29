@@ -2,5 +2,37 @@
 
 BASE_DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-bash "$BASE_DIR"/scripts/_pre-commit
-exit "$?"
+# Return `true` if files under `packages/contracts/contracts/` directory has been changed or added. Otherwise, return `false`
+is_contracts_changed()
+{
+    result="false"
+    git_changes=$(git diff --cached --name-status)
+
+    while read -r line; do
+        changed_file_path=$(echo "$line" | awk '/packages/ {print $2}')
+        file_status=$(echo "$line" | cut -c 1)
+
+        if [ "$file_status" = 'A' ] || [ "$file_status" = 'M' ]
+        then
+            case $changed_file_path in packages/contracts/contracts/*)
+                result="true"
+            esac
+        fi
+    done <<< "$git_changes"
+    
+    echo "$result"
+}
+
+
+. "$(dirname "$0")/_/husky.sh"
+
+
+# Check lint for all subpackage
+npx lint-staged
+
+RETURN_CODE=$(is_contracts_changed)
+if [ $RETURN_CODE = "true" ]; then
+    # Run contract tests
+    npx yarn workspace @qfi/contracts typechain
+    npx yarn workspace @qfi/contracts test:unit
+fi

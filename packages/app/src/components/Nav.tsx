@@ -11,14 +11,14 @@ export const Nav = () => {
       alignItems={{ base: "center", md: "center" }}
       w="full">
       <HStack alignItems={"center"} spacing={[1, 2, 2]}>
-        <Logo h={[10, 12, 12]} />
+       
         <Text
           position="relative"
           letterSpacing={["-2px", "-2px", "-1.5px"]}
           fontWeight="bold"
           fontSize={[28, 32, 32]}
           textAlign="center">
-          QFI
+          
         </Text>
       </HStack>
       <HStack alignItems={"center"} spacing={[1, 2]}>

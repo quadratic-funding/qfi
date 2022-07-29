@@ -25,10 +25,10 @@ type QFI @entity {
     voiceCreditFactor: BigInt!
     nextGrantRoundId: BigInt!
     contributorCount: BigInt!
-    isStateAqMerged: Boolean
+    isStateAqMerged: Boolean!
 
     # Inherited from MACI.
-    stateTreeDepth: Int
+    stateTreeDepth: BigInt!
     numSignUps: BigInt!
     isInitialized: Boolean
     signUpTimestamp: BigInt!
@@ -38,10 +38,10 @@ type QFI @entity {
     vkRegistryAddress: Bytes
     pollFactoryAddress: Bytes!
     messageAqFactoryPollAddress: Bytes
-    stateAqAddress: Bytes
-    nativeERC20TokenAddress: Bytes!
+    stateAqAddress: Bytes!
+    nativeERC20TokenAddress: Bytes
     messageAqFactoryGrantRoundAddress: Bytes
-    grantRoundFactoryAddress: Bytes!
+    grantRoundFactoryAddress: Bytes
     pollProcessorAndTallyerAddress: Bytes
 
     # Links.
@@ -72,7 +72,7 @@ type PublicKey @entity {
     # Associated voting info.
     lifetimeAmountContributed: BigInt!
     voiceCreditBalance: BigInt!
-    stateIndex: BigInt
+    stateIndex: BigInt!
     
     # Links.
     grantRound: GrantRound # Can be present if the PublicKey is used in addition to send a message.
@@ -83,6 +83,8 @@ type PublicKey @entity {
     contributions: [Contribution!] @derivedFrom(field: "publicKey")
 
     timestamp: String!
+
+    lastUpdatedAt: String!
 }
 
 # A message sent from a public key by a voter.
@@ -116,7 +118,7 @@ type RecipientRegistry @entity {
     maxRecipients: BigInt!
 
     # Link.
-    grantRound: GrantRound!
+    grantRound: GrantRound
 
     # Reverse Lookup for the recipients registered in this registry.
     recipients: [Recipient!] @derivedFrom(field: "recipientRegistry")
@@ -133,26 +135,46 @@ type Recipient @entity {
     id: ID!
 
     # Main fields.
-    address: Bytes!
+    address: Bytes
     metadata: String
-    requestType: RequestType # Enum.
-    requesterAddress: Bytes
-    submissionTime: BigInt
-    deposit: BigInt
     addedAt: BigInt
     removedAt: BigInt
     voteOptionIndex: BigInt
-    rejected: Boolean!
-    # Tx hash mirror.
-    requestResolvedHash: Bytes
-    requestSubmittedHash: Bytes
 
+    # Request fields.
+    # nb. we are not storing an history of requests (as the mapping on-chain, just the current/last one).
+    requestType: RequestType
+    requesterAddress: Bytes
+    requestRecipientAddress: Bytes
+    requestRecipientMetadata: String
+    submissionTime: BigInt
+    resolutionTime: BigInt
+    deposit: BigInt!
+    rejected: Boolean
+    # Tx hash mirror.
+    requestSubmittedHash: Bytes
+    requestResolvedHash: Bytes
+    
     # Links.
-    grantRounds: [GrantRoundRecipient!] @derivedFrom(field: "recipient")
     recipientRegistry: RecipientRegistry!
 
     # Reverse Lookup of the claimed donations sent to this recipient.
     donations: [Donation!] @derivedFrom(field: "recipient")
+    # Reverse Lookup of the Grant Rounds where the Recipient has participated.
+    grantRounds: [GrantRoundRecipient!] @derivedFrom(field: "recipient")
+    
+    createdAt: String!
+    lastUpdatedAt: String!
+}
+
+# Represent a Grant Round Factory entity for storing RecipientRegistry and MessageAQFactory addresses.
+type GrantRoundFactory @entity {
+    # Set to the HEX string representation of the ETH address of the Grant Round Factory.
+    # (i.e., can be derived from the tx sender or an address event parameter).
+    id: ID!
+
+    messageAqFactoryAddress: Bytes
+    recipientRegistryAddress: Bytes
 
     createdAt: String!
     lastUpdatedAt: String!
@@ -163,7 +185,7 @@ type GrantRoundRecipient @entity {
     # Set to the concatenation of `${grantRound.id}-${recipient.id}`.
     id: ID!
 
-    grantRound: GrantRound!
+    grantRound: GrantRound
     recipient: Recipient!
 }
 

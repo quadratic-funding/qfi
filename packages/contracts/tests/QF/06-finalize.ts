@@ -507,7 +507,7 @@ describe("Process - Tally QV poll votes", function () {
       expect(pptsbCommitment).to.not.be.equal(BigNumber.from(0));
       expect(expectedSbCommitment).to.not.be.equal(BigNumber.from(0));
       expect(pptsbCommitment).to.be.equal(expectedSbCommitment);
-      expect(pollCurrentSbCommitment).to.not.be.equal(pptsbCommitment); // poll sbCommitment is the same as the one calculated offchain
+      expect(pollCurrentSbCommitment).to.not.be.equal(pptsbCommitment); // poll sbCommitment is not the same as the one calculated on state
     });
 
     it("verify - merged message root is correct", async () => {
@@ -532,7 +532,7 @@ describe("Process - Tally QV poll votes", function () {
       expect(await poll.verifySpentVoiceCredits(_totalSpent, _totalSpentSalt)).to.be.true;
     });
 
-    it.skip("TODO FIX - poll SHOULD verifyTallyResult", async () => {
+    it("TODO FIX - poll SHOULD verifyTallyResult", async () => {
       // Setup
       const recipientIndex = 1;
       const resultTree = new IncrementalQuinTree(treeDepths.voteOptionTreeDepth, BigInt(0), STATE_TREE_ARITY, hash5);
@@ -550,6 +550,7 @@ describe("Process - Tally QV poll votes", function () {
       // Calculate arguments
       const _voteOptionIndex = recipientIndex;
       const _tallyResult = tallyFileData.results.tally[recipientIndex]; // result of the recipient
+      const _tallyResultSalt = tallyFileData.results.salt;
       const _tallyResultProof = resultProof.pathElements.map((x: any) => x.map((y: any) => y.toString())); // result proof as astring
       const _spentVoiceCreditsHash = BigNumber.from(
         hashLeftRight(
@@ -583,14 +584,15 @@ describe("Process - Tally QV poll votes", function () {
           _voteOptionIndex,
           _tallyResult,
           _tallyResultProof,
+          _tallyResultSalt,
           _spentVoiceCreditsHash,
           _perVOSpentVoiceCreditsHash,
           _tallyCommitment
         )
       ).to.be.true;
     });
-
-    it.skip("TODO FIX - poll contract SHOULD verifyPerVOSpentVoiceCredits", async () => {
+    //TODO: fix broken tests once upstream  maci decorator is fixed
+    it.skip("verify - poll contract can verifyPerVOSpentVoiceCredits", async () => {
       const recipientIndex = 1;
 
       const perVOspentTree = new IncrementalQuinTree( treeDepths.voteOptionTreeDepth, BigInt(0), STATE_TREE_ARITY, hash5); // prettier-ignore

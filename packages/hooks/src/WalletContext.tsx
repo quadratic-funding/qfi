@@ -30,20 +30,26 @@ export const SUPPORTED_NETWORKS: NetworkConfig = {
     explorer: "https://etherscan.io",
     rpc: "https://mainnet.infura.io/v3/<your infura project id>",
   },
-
+  "0x64": {
+    chainId: "0x64",
+    name: "Gnosis Chain",
+    symbol: "Gnosis Chain",
+    explorer: "https://blockscout.com/Gnosis Chain/mainnet/",
+    rpc: "https://rpc.gnosischain.com/",
+  },
+  "0x89": {
+    chainId: "0x89",
+    name: "Polygon Mainnet",
+    symbol: "MATIC",
+    explorer: "https://polygonscan.com/",
+    rpc: "https://polygon-mainnet.g.alchemy.com/v2/7afvptVsZxjFBz8Mcdm4dpu84IekOGds",
+  },
   "0x539": {
     chainId: "0x539",
     name: "Hardhat",
     symbol: "ETH",
     explorer: "http://localhost:1234",
     rpc: "http://localhost:8545",
-  },
-  "0x89": {
-    chainId: "0x89",
-    name: "Polygon",
-    symbol: "MATIC",
-    explorer: "https://polygonscan.com",
-    rpc: "https://polygon-rpc.com/",
   },
   "0x13881": {
     chainId: "0x13881",
@@ -61,7 +67,7 @@ export const providerOptions: IProviderOptions = {
       infuraId: "8043bb2cf99347b1bfadfb233c5325c0",
       rpc: {
         1: SUPPORTED_NETWORKS["0x1"].rpc,
-        // 4: SUPPORTED_NETWORKS["0x4"].rpc,
+        100: SUPPORTED_NETWORKS["0x64"].rpc,
         1337: SUPPORTED_NETWORKS["0x539"].rpc,
       },
     },
@@ -73,7 +79,7 @@ export const providerOptions: IProviderOptions = {
       infuraId: "8043bb2cf99347b1bfadfb233c5325c0",
       rpc: {
         1: SUPPORTED_NETWORKS["0x1"].rpc,
-        // 4: SUPPORTED_NETWORKS["0x4"].rpc,
+        100: SUPPORTED_NETWORKS["0x64"].rpc,
         1337: SUPPORTED_NETWORKS["0x539"].rpc,
       },
     },
@@ -380,6 +386,10 @@ export const useWallet = (): WalletContextType => useContext(WalletContext);
 
 export const nameToChainId = (name: string): string | undefined => {
   switch (name) {
+    case "Gnosis Chain":
+      return "0x64";
+    case "polygon":
+      return "0x89";
     case "Mainnet":
       return "0x1";
     case "Hardhat":

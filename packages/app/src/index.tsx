@@ -4,14 +4,15 @@ import ReactDOM from "react-dom";
 import reportWebVitals from "./reportWebVitals";
 import * as serviceWorker from "./serviceWorker";
 
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter, HashRouter } from "react-router-dom";
 import { CSSReset } from "@chakra-ui/react";
-import { WalletProvider, web3modalOptions, SUPPORTED_NETWORKS, nameToChainId } from "@qfi/hooks";
+import { nameToChainId } from "@qfi/hooks";
 
 import { App } from "./App";
 import { DappProvider } from "./context/DappContext";
 
-const DEFAULT_CHAIN_ID = nameToChainId("Mainnet"); // Used to switch to if the user is on an unsupported network
+const DEFAULT_CHAIN_ID = nameToChainId("xdai"); // Used to switch to if the user is on an unsupported network
+console.log(DEFAULT_CHAIN_ID)
 
 declare global {
   interface WindowEventMap {
